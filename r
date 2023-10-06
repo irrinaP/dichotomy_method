@@ -1,0 +1,125 @@
+using System;
+using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
+using System.Globalization;
+using System.CodeDom.Compiler;
+
+namespace MinimizationApp
+{
+    public partial class MainForm : Form
+    {
+        public MainForm()
+        {
+            InitializeComponent();
+        }
+
+        private void CalculateButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (double.TryParse(aTextBox.Text, out double a) &&
+                    double.TryParse(bTextBox.Text, out double b) &&
+                    double.TryParse(eTextBox.Text, out double e))
+                {
+                    string formula = formulaTextBox.Text;
+
+                    double minimum = CalculateMinimum(a, b, e, formula);
+
+                    DisplayGraph(a, b, formula, minimum);
+
+                    MessageBox.Show($"Минимум функции: {minimum}");
+                }
+                else
+                {
+                    MessageBox.Show("Некорректные входные данные.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка: {ex.Message}");
+            }
+        }
+
+        private void ClearButton_Click(object sender, EventArgs e)
+        {
+            aTextBox.Clear();
+            bTextBox.Clear();
+            eTextBox.Clear();
+            formulaTextBox.Clear();
+            chart.Series.Clear();
+        }
+
+        private double CalculateMinimum(double a, double b, double e, string formula)
+        {
+            // Расчет минимума функции с использованием метода половинного деления
+            double x1 = a;
+            double x2 = b;
+            double xMinimum = (x1 + x2) / 2;
+
+            while ((x2 - x1) >= e)
+            {
+                double xMiddle = (x1 + x2) / 2;
+                double f1 = CalculateFunctionValue(x1, formula);
+                double f2 = CalculateFunctionValue(x2, formula);
+                double fMiddle = CalculateFunctionValue(xMiddle, formula);
+
+                if (fMiddle < 0)
+                {
+                    x2 = xMiddle;
+                }
+                else
+                {
+                    x1 = xMiddle;
+                }
+
+                xMinimum = (x1 + x2) / 2;
+            }
+
+            return xMinimum;
+        }
+
+        private double CalculateFunctionValue(double x, string formula)
+        {
+            // Расчет значения функции f(x) в точке x
+            CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
+            CompilerParameters parameters = new CompilerParameters();
+            parameters.GenerateInMemory = true;
+            CompilerResults results = provider.CompileAssemblyFromSource(parameters,
+                $@"
+                using System;
+                public class FunctionEvaluator
+                {{
+                    public static double Evaluate(double x)
+                    {{
+                        return {formula};
+                    }}
+                }}");
+
+            if (results.Errors.Count == 0)
+            {
+                Type type = results.CompiledAssembly.GetType("FunctionEvaluator");
+                var method = type.GetMethod("Evaluate");
+                return (double)method.Invoke(null, new object[] { x });
+            }
+            else
+            {
+                throw new Exception("Ошибка в формуле функции.");
+            }
+        }
+
+        private void DisplayGraph(double a, double b, string formula, double minimum)
+        {
+            chart.Series.Clear();
+            Series series = new Series("Function");
+            chart.Series.Add(series);
+
+            for (double x = a; x <= b; x += 0.01)
+            {
+                double y = CalculateFunctionValue(x, formula);
+                series.Points.AddXY(x, y);
+            }
+
+            chart.Series.Add(new Series("Minimum") { Points = { new DataPoint(minimum, CalculateFunctionValue(minimum, formula)) } });
+        }
+    }
+}
