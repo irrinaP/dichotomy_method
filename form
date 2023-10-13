@@ -1,19 +1,20 @@
 using System;
 using System.Windows.Forms;
-using System.Windows.Forms.DataVisualization.Charting;
 using System.Globalization;
 using System.CodeDom.Compiler;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-namespace MinimizationApp
+namespace dichotomy_method
 {
-    public partial class MainForm : Form
+    public partial class Form1 : Form
     {
-        public MainForm()
+
+        public Form1()
         {
             InitializeComponent();
         }
 
-        private void CalculateButton_Click(object sender, EventArgs e)
+        private void Form1_Load(object sender, EventArgs e)
         {
             try
             {
